@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-nova_root_pass}
+      MYSQL_DATABASE: ${DB_NAME:-sika_sante}
+    ports:
+      - "3307:3306"
+    volumes:
+      - nova_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-4001}:4001"
+    environment:
+      API_PORT: 4001
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-nova_root_pass}
+      DB_NAME: ${DB_NAME:-sika_sante}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      NODE_ENV: production
+      WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+      SEED_DEMO: "false"
+    volumes:
+      - nova_uploads:/app/data/uploads
+
+volumes:
+  nova_mysql:
+  nova_uploads:
