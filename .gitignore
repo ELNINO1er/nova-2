@@ -4,6 +4,8 @@ dist/
 data/*.sqlite
 .env
 .env.local
+.env.vps
+backups/
 data/uploads/
 coverage/
 *.zip
