@@ -1,6 +1,8 @@
 # Déployer NOVA sur le VPS Hostinger
 
-Architecture : Caddy (HTTPS) → API Express + frontend React → MySQL privé.
+Architecture : Caddy SCMC existant (HTTPS) → API NOVA + frontend React → MySQL NOVA privé.
+
+NOVA réutilise le réseau `scmc-backend_default`. Elle ne démarre pas un second Caddy et ne publie aucun port supplémentaire.
 
 ## 1. DNS et pare-feu
 
@@ -58,11 +60,11 @@ cd /opt/nova
 docker compose config --quiet
 docker compose up -d --build
 docker compose ps
-docker compose logs --tail=100 api
-docker compose logs --tail=100 caddy
+docker compose logs --tail=100 nova-api
+docker compose logs --tail=100 nova-db
 ```
 
-Caddy obtient et renouvelle automatiquement le certificat TLS lorsque le DNS pointe vers le VPS et que les ports 80/443 sont ouverts.
+Ajouter le bloc de `deploy/Caddyfile` au Caddy SCMC existant, puis valider et recharger sa configuration. Caddy obtient et renouvelle automatiquement le certificat TLS.
 
 ## 5. Vérifier
 
@@ -88,7 +90,7 @@ BOOTSTRAP_ADMIN_NAME=Administrateur NOVA
 Puis :
 
 ```bash
-docker compose run --rm api npm run bootstrap:admin
+docker compose run --rm nova-api npm run bootstrap:admin
 ```
 
 Retirer immédiatement ces deux lignes de `.env`.
@@ -120,12 +122,11 @@ Copier périodiquement `/opt/backups/nova` vers un stockage externe. Une sauvega
 
 ```bash
 docker compose ps
-docker compose logs -f --tail=200 api
-docker compose logs -f --tail=200 db
-docker compose restart api
+docker compose logs -f --tail=200 nova-api
+docker compose logs -f --tail=200 nova-db
+docker compose restart nova-api
 docker compose down
 docker stats
 ```
 
 Ne jamais exécuter `docker compose down -v` : l'option `-v` supprimerait les volumes MySQL et les documents.
-

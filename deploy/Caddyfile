@@ -1,4 +1,4 @@
-{$DOMAIN} {
+nova.mhtechconsulting.com {
   encode zstd gzip
 
   header {
@@ -9,7 +9,7 @@
     -Server
   }
 
-  reverse_proxy api:4001 {
+  reverse_proxy nova-api:4001 {
     health_uri /api/health
     health_interval 30s
   }
@@ -19,4 +19,3 @@
     format json
   }
 }
-

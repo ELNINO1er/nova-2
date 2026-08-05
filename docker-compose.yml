@@ -1,7 +1,7 @@
 name: nova
 
 services:
-  db:
+  nova-db:
     image: mysql:8.4
     restart: unless-stopped
     environment:
@@ -26,19 +26,19 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  api:
+  nova-api:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      db:
+      nova-db:
         condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 4001
       WEB_ORIGIN: https://${DOMAIN:?DOMAIN is required}
-      DB_HOST: db
+      DB_HOST: nova-db
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER:-nova}
       DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
@@ -60,7 +60,7 @@ services:
     volumes:
       - nova_uploads:/app/data/uploads
     networks:
-      - frontend
+      - shared_proxy
       - backend
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
@@ -71,34 +71,13 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  caddy:
-    image: caddy:2.10-alpine
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    environment:
-      DOMAIN: ${DOMAIN:?DOMAIN is required}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - frontend
-    security_opt:
-      - no-new-privileges:true
-
 volumes:
   nova_mysql:
   nova_uploads:
-  caddy_data:
-  caddy_config:
 
 networks:
-  frontend:
+  shared_proxy:
+    external: true
+    name: ${PROXY_NETWORK:-scmc-backend_default}
   backend:
     internal: true
