@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { pool } from '../db/database.js';
 import { sendOtp } from './auth.service.js';
 import { notifyPatientConsultation, notifyPatientPrescription, notifyDoctorReferral } from './notification.service.js';
+import { normalizeCiPhone } from '../utils/phone.js';
 
 /* ─── Dashboard ──────────────────────────────────────────────── */
 
@@ -179,7 +180,7 @@ export async function createPatientByDoctor(doctorId, payload) {
     await conn.beginTransaction();
 
     // 1. Vérifier que le téléphone n'existe pas déjà
-    const phone = payload.phone.replace(/\s/g, '');
+    const phone = normalizeCiPhone(payload.phone);
     const [[existingUser]] = await conn.execute('SELECT id FROM nova_users WHERE phone = ?', [phone]);
     if (existingUser) {
       const err = new Error('Un compte avec ce numéro existe déjà.');

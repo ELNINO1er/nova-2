@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { randomUUID, randomInt } from 'node:crypto';
 import { pool } from '../db/database.js';
 import { sendSms } from './sms.provider.js';
+import { normalizeCiPhone } from '../utils/phone.js';
 
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 3;
@@ -12,7 +13,7 @@ const OTP_MAX_ATTEMPTS = 3;
  * For dev, the OTP is returned in the response.
  */
 export async function sendOtp(phone) {
-  const cleaned = phone.replace(/\s/g, '');
+  const cleaned = normalizeCiPhone(phone);
 
   // Check if user exists
   const [[user]] = await pool.execute('SELECT id FROM nova_users WHERE phone = ?', [cleaned]);
@@ -48,7 +49,7 @@ export async function sendOtp(phone) {
  * Verify OTP code and return user if valid.
  */
 export async function verifyOtp(phone, code) {
-  const cleaned = phone.replace(/\s/g, '');
+  const cleaned = normalizeCiPhone(phone);
 
   // Find latest non-verified, non-expired OTP
   const [[otp]] = await pool.execute(
@@ -183,7 +184,7 @@ function maskPhone(phone) {
  * Legacy login (direct code comparison) — kept for backward compatibility.
  */
 export async function phoneExists(phone) {
-  const cleaned = phone.replace(/\s/g, '');
+  const cleaned = normalizeCiPhone(phone);
   const [[user]] = await pool.execute('SELECT id FROM nova_users WHERE phone = ?', [cleaned]);
   return !!user;
 }
